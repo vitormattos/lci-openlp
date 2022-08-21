@@ -36,6 +36,7 @@ class Lyric
     private string $htmlFile;
     private string $url;
     private array $topic = [];
+    private array $parts = [];
     private string $title;
     private ?string $titleAlternative;
     private ?string $hpd;
@@ -181,6 +182,37 @@ class Lyric
         $authors = $this->getAuthors();
         $this->parseTitleAlternative();
         $this->translateUnkownAuthor();
+        $this->parseSong();
+    }
+
+    private function parseSong(): void
+    {
+        $crawler = $this->getCrawler();
+        if (!$crawler) {
+            return;
+        }
+        $list = explode('<hr>', $crawler->filter('article')->html());
+        $parts = (new Crawler($list[0]))
+            ->filter('p')
+            ->each(function($part) {
+                $part = $part->html();
+                $part = $this->sanitizeText($part);
+                $part = strip_tags($part);
+                $part = preg_replace('/^\d+\. ?/', '', $part);
+                return $part;
+            });
+        // remove empty parts
+        $this->parts = array_filter($parts, fn ($s) => strlen($s));
+    }
+
+    private function sanitizeText(string $string): string
+    {
+        // Replace multiple spaces
+        $string = preg_replace('/[  \t]+/', ' ', $string);
+        // rtrim
+        $string = preg_replace('/ *\n */', "\n", $string);
+        $string = trim($string);
+        return $string;
     }
 
     private function parseTitleAlternative(): void
@@ -232,8 +264,7 @@ class Lyric
 
     private function cleanLikeGoHorse(string $string): string
     {
-        // Replace multiple spaces
-        $string = preg_replace('/ +/', ' ', $string);
+        $string = $this->sanitizeText($string);
 
         // Go Horse
         $string = str_replace('Johnson Oatman, Jr', 'Johnson Oatman Jr', $string);
@@ -258,8 +289,6 @@ class Lyric
             $this->setTopic('Salmo 91.1,2');
         }
         $string = str_replace('Letra; Salmo 91.1,2', '', $string);
-        // rtrim
-        $string = preg_replace('/ \n/', "\n", $string);
         return $string;
     }
 
