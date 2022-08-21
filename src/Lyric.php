@@ -23,6 +23,7 @@
 
 namespace Hinario;
 
+use DateTime;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpClient\Response\AsyncContext;
@@ -35,20 +36,20 @@ class Lyric
     private string $lci;
     private string $htmlFile;
     private string $url;
-    private array $topic = [];
+    private array $topics = [];
     private array $parts = [];
     private string $title;
     private ?string $titleAlternative;
     private ?string $hpd;
     private ?Crawler $crawler;
     private $resource;
+    private ?int $id;
     private array $authors = [
         'word' => [],
         'music' => [],
         'translation' => [],
         'word_and_music' => [],
     ];
-    private $topics;
     public function __construct(array $row, $assetsPath)
     {
         $this->assetsPath = $assetsPath;
@@ -56,9 +57,21 @@ class Lyric
         $this->htmlFile = $this->assetsPath . '/LCI/html/' . $this->lci . '.html';
         $this->url = $row['url'];
         $this->title = $row['title'];
-        $this->hpd = $row['hpd'] ?? null;
+        $this->titleAlternative = null;
+        $this->hpd = $row['HPD'] ?? null;
         $this->setTopic($row['topic']);
         $this->crawler = null;
+        $this->id = null;
+    }
+
+    public function setId(int $id): void
+    {
+        $this->id = $id;
+    }
+
+    public function getId(): string
+    {
+        return $this->id;
     }
 
     public function getAssetsPath(): string
@@ -91,19 +104,24 @@ class Lyric
         return $this->title;
     }
 
-    public function getHpd(): string
+    public function getTitleAlternative(): ?string
+    {
+        return $this->titleAlternative;
+    }
+
+    public function getHpd(): ?string
     {
         return $this->hpd;
     }
 
     public function getTopic(): array
     {
-        return $this->topic;
+        return $this->topics;
     }
 
     private function setTopic($topic): void {
-        if (!in_array($topic, $this->topic)) {
-            $this->topic[] = $topic;
+        if (!in_array($topic, $this->topics)) {
+            $this->topics[] = $topic;
         }
     }
 
@@ -185,6 +203,11 @@ class Lyric
         $this->parseSong();
     }
 
+    public function getParts(): array
+    {
+        return $this->parts;
+    }
+
     private function parseSong(): void
     {
         $crawler = $this->getCrawler();
@@ -227,7 +250,7 @@ class Lyric
         }
     }
 
-    private function getAuthors(): array
+    public function getAuthors(): array
     {
         if ($this->countAuthors()) {
             return $this->authors;
@@ -243,7 +266,7 @@ class Lyric
             $string = $this->cleanLikeGoHorse($string);
 
             $string = $this->parseAuthors($string, 'word_and_music');
-            $string = $this->parseAuthors($string, 'word');
+            $string = $this->parseAuthors($string, 'words');
             $string = $this->parseAuthors($string, 'music');
             $string = $this->parseAuthors($string, 'translation');
             $string = $this->parseAuthors($string, 'unknown');
@@ -308,7 +331,7 @@ class Lyric
         $separator = '[ ]*[\/;:\-][ ]*';
         $music = '(arranjo|me(lo|ol|l)dia|melida|estribilho|música)';
         $patternsDictionary = [
-            'word' => [
+            'words' => [
                 '/((autor(i?a)? da )?(\da\.? )?(le[tg]ra|estrofe|autor(ia)?))' . $separator . $name . '/i',
                 '/(autores)' . $separator . $name . '/i',
             ],
@@ -326,6 +349,11 @@ class Lyric
         $patterns = $patternsDictionary[$type];
         if ($type === 'unknown') {
             $type = 'word_and_music';
+        }
+        if ($type === 'word_and_music') {
+            $types = ['words', 'music'];
+        } else {
+            $types[] = $type;
         }
         $blockList = [
             'Alemanha, Século VII',
@@ -345,11 +373,15 @@ class Lyric
                     if (count($explode) > 1) {
                         foreach ($explode as $author) {
                             if (trim($author)) {
-                                $this->authors[$type][] = trim($author);
+                                foreach ($types as $type) {
+                                    $this->authors[$type][] = trim($author);
+                                }
                             }
                         }
                     } elseif (trim($match)) {
-                        $this->authors[$type][] = trim($match);
+                        foreach ($types as $type) {
+                            $this->authors[$type][] = trim($match);
+                        }
                     }
                     $string = str_replace($matches[$i], '', $string);
                 }
@@ -386,6 +418,7 @@ class Lyric
         $dictionary = [
             'Desconhecida',
             'Desconhecido',
+            'Origem incerta',
         ];
         foreach ($this->authors as $type => $authors) {
             foreach ($authors as $key => $author) {
@@ -399,5 +432,46 @@ class Lyric
     private function removeUnusedAuthorTypes(): void
     {
         $this->authors = array_filter($this->authors, fn($authors) => count($authors));
+    }
+
+    public function __toString()
+    {
+        $xml = "<?xml version='1.0' encoding='UTF-8'?>";
+        $xml.= '<song xmlns="http://openlyrics.info/namespace/2009/song" version="0.8" createdIn="OpenLP 2.9.5" modifiedIn="OpenLP 2.9.5" modifiedDate="' . (new \DateTime())->format('Y-m-d\TH:i:s') . '">';
+        $xml.= '  <properties>';
+        $xml.= '    <titles>';
+        $xml.= '      <title>' . $this->getTitle() . '</title>';
+        if ($this->getTitleAlternative()) {
+            $xml.= '      <title>' . $this->getTitleAlternative() . '</title>';
+        }
+        $xml.= '    </titles>';
+        $xml.= '    <authors>';
+        foreach ($this->getAuthors() as $type => $authors) {
+            foreach ($authors as $author) {
+                $xml.= '      <author type="' . $type . '">' . $author . '</author>';
+            }
+        }
+        $xml.= '    </authors>';
+        $xml.= '    <songbooks>';
+        $xml.= '      <songbook name="LCI" entry="' . $this->getLci(). '"/>';
+        if ($this->getHpd()) {
+            $xml.= '      <songbook name="HPD" entry="' . $this->getHpd(). '"/>';
+        }
+        $xml.= '    </songbooks>';
+        $xml.= '    <themes>';
+        foreach ($this->getTopic() as $topic) {
+            $xml.= '      <theme>' . $topic . '</theme>';
+        }
+        $xml.= '    </themes>';
+        $xml.= '  </properties>';
+        $xml.= '  <lyrics>';
+        foreach ($this->getParts() as $key => $part) {
+            $xml.= '    <verse name="v' . ($key + 1) . '">';
+            $xml.= '      <lines>' . nl2br($part) . '</lines>';
+            $xml.= '    </verse>';
+        }
+        $xml.= '  </lyrics>';
+        $xml.= '</song>';
+        return $xml;
     }
 }

@@ -28,10 +28,12 @@ use Symfony\Component\DomCrawler\Crawler;
 class Proccess
 {
     private string $assetsPath;
+    private \PDO $pdo;
 
     public function __construct()
     {
         $this->assetsPath = realpath(dirname(__FILE__) . '/../assets/');
+        $this->pdo = new \PDO('sqlite:assets/songs.sqlite', '', '', [\PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC]);
     }
     public function getSummary(): array
     {
@@ -103,5 +105,109 @@ class Proccess
             $lyric->parseAll();
         }
         return $summary;
+    }
+
+    public function populdateDatabase(): void
+    {
+        $songs = $this->parseSongs();
+
+
+        $stmt = $this->pdo->query('DELETE FROM songs');
+        $stmt = $this->pdo->query('VACUUM');
+        foreach ($songs as $lyric) {
+            $this->insertSongs($lyric);
+        }
+
+        $stmt = $this->pdo->query('DELETE FROM authors');
+        $stmt = $this->pdo->query('DELETE FROM authors_songs');
+        $stmt = $this->pdo->query('VACUUM');
+        foreach ($songs as $lyric) {
+            $this->insertAuthors($lyric);
+        }
+
+        $stmt = $this->pdo->query('DELETE FROM topics');
+        $stmt = $this->pdo->query('VACUUM');
+        foreach ($songs as $lyric) {
+            $this->insertTopics($lyric);
+        }
+
+        $stmt = $this->pdo->query('DELETE FROM songs_songbooks');
+        $stmt = $this->pdo->query('VACUUM');
+        foreach ($songs as $lyric) {
+            $stmt = $this->pdo->prepare('INSERT INTO songs_songbooks (songbook_id, song_id, entry) VALUES(?,?,?)');
+            $stmt->execute([1, $lyric->getId(), $lyric->getLci()]);
+            if ($lyric->getHpd()) {
+                $stmt = $this->pdo->prepare('INSERT INTO songs_songbooks (songbook_id, song_id, entry) VALUES(?,?,?)');
+                $stmt->execute([2, $lyric->getId(), $lyric->getHpd()]);
+            }
+        }
+    }
+
+    private function insertSongs(Lyric $lyric): void
+    {
+        $data['title'] = $lyric->getTitle();
+        $data['alternate_title'] = $lyric->getTitleAlternative() ?? '';
+        $data['lyrics'] = (string) $lyric;
+        $data['verse_order'] = '';
+        $data['copyright'] = '';
+        $data['comments'] = '';
+        $data['ccli_number'] = '';
+        $data['theme_name'] = null;
+        $data['search_title'] = $lyric->getTitle() .  '@' . $lyric->getTitleAlternative();
+        $data['search_lyrics'] = implode(' ', array_map(
+            fn ($part) => str_replace("\n", ' ', $part),
+            $lyric->getParts()
+        ));
+        $data['create_date'] = (new \DateTime())->format('Y-m-d\TH:i:s');
+        $data['last_modified'] = (new \DateTime())->format('Y-m-d\TH:i:s');
+        $data['temporary'] = 0;
+        $insert = 'INSERT INTO songs (' .
+            implode(',', array_keys($data)) .
+            ') VALUES (' .
+            implode(',', array_fill(0, count($data), '?')) .
+            ')';
+        $stmt = $this->pdo->prepare($insert);
+        $stmt->execute(array_values($data));
+        $lyric->setId($this->pdo->lastInsertId());
+    }
+
+    private function insertTopics(Lyric $lyric): void
+    {
+        foreach ($lyric->getTopic() as $topic) {
+            $stmt = $this->pdo->prepare('SELECT id FROM topics WHERE name = ?');
+            $stmt->execute([$topic]);
+            $topicId = $stmt->fetchColumn();
+            if (!$topicId) {
+                $stmt = $this->pdo->prepare('INSERT INTO topics (name) VALUES(?)');
+                $stmt->execute([$topic]);
+                $topicId = $this->pdo->lastInsertId();
+            }
+            $stmt = $this->pdo->prepare('INSERT INTO songs_topics (song_id, topic_id) VALUES(?,?)');
+            try {
+                $stmt->execute([$lyric->getId(), $topicId]);
+            } catch (\Throwable $th) {
+            }
+        }
+    }
+
+    private function insertAuthors(Lyric $lyric): void
+    {
+        foreach ($lyric->getAuthors() as $type => $authors) {
+            foreach ($authors as $displayName) {
+                $stmt = $this->pdo->prepare('SELECT id FROM authors WHERE display_name = ?');
+                $stmt->execute([$displayName]);
+                $authorId = $stmt->fetchColumn();
+                if (!$authorId) {
+                    $stmt = $this->pdo->prepare('INSERT INTO authors (first_name, last_name, display_name) VALUES(?,?,?)');
+                    $parts = explode(' ', $displayName);
+                    $last = array_pop($parts);
+                    $first = implode(' ', $parts);
+                    $stmt->execute([$first, $last, $displayName]);
+                    $authorId = $this->pdo->lastInsertId();
+                }
+                $stmt = $this->pdo->prepare('INSERT INTO authors_songs (author_id, song_id, author_type) VALUES(?,?,?)');
+                $stmt->execute([$authorId, $lyric->getId(), $type]);
+            }
+        }
     }
 }
