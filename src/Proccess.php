@@ -95,7 +95,7 @@ class Proccess
     {
         $summary = $this->getSummary();
         foreach ($summary as $lyric) {
-            $lyric->parseLyric();
+            $lyric->parseAll();
         }
     }
 }
