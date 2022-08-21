@@ -98,14 +98,4 @@ class Proccess
             $lyric->parseLyric();
         }
     }
-
-    // if ($title != $row['title']) {
-    //     $row['alternative_title'] = $title;
-    // }
-    // $title = $lyric->filter('#text-print article')
-    //     ->
-    // file_put_contents(
-    //     'LCI/' . $lyric->getLci() . ' - ' . $row['title'] . '.html',
-    //     $text
-    // );
 }
