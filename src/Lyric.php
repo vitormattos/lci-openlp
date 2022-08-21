@@ -30,6 +30,7 @@ use Symfony\Component\HttpClient\Response\AsyncResponse;
 
 class Lyric
 {
+    const UNKNOWN_AUTHOR = 'Autoria desconheecida';
     private string $assetsPath;
     private string $lci;
     private string $htmlFile;
@@ -179,6 +180,7 @@ class Lyric
     {
         $authors = $this->getAuthors();
         $this->parseTitleAlternative();
+        $this->translateUnkownAuthor();
     }
 
     private function parseTitleAlternative(): void
@@ -346,6 +348,21 @@ class Lyric
                 });
             }
             $this->authors[$type] = $authors;
+        }
+    }
+
+    private function translateUnkownAuthor(): void
+    {
+        $dictionary = [
+            'Desconhecida',
+            'Desconhecido',
+        ];
+        foreach ($this->authors as $type => $authors) {
+            foreach ($authors as $key => $author) {
+                if (in_array($author, $dictionary)) {
+                    $this->authors[$type][$key] = self::UNKNOWN_AUTHOR;
+                }
+            }
         }
     }
 }
