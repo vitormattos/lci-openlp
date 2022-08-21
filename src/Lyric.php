@@ -247,6 +247,7 @@ class Lyric
             $string = $this->parseAuthors($string, 'music');
             $string = $this->parseAuthors($string, 'translation');
             $string = $this->parseAuthors($string, 'unknown');
+            $this->removeUnusedAuthorTypes();
             $this->removeBibleReferences();
 
             if ($this->countAuthors()) {
@@ -393,5 +394,10 @@ class Lyric
                 }
             }
         }
+    }
+
+    private function removeUnusedAuthorTypes(): void
+    {
+        $this->authors = array_filter($this->authors, fn($authors) => count($authors));
     }
 }

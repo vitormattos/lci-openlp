@@ -91,11 +91,17 @@ class Proccess
         }
     }
 
-    public function parseLyrics(): void
+    /**
+     * Parse and return the songs
+     *
+     * @return Lyric[]
+     */
+    public function parseSongs(): array
     {
         $summary = $this->getSummary();
         foreach ($summary as $lyric) {
             $lyric->parseAll();
         }
+        return $summary;
     }
 }
