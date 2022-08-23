@@ -206,7 +206,11 @@ class Proccess
                     $authorId = $this->pdo->lastInsertId();
                 }
                 $stmt = $this->pdo->prepare('INSERT INTO authors_songs (author_id, song_id, author_type) VALUES(?,?,?)');
-                $stmt->execute([$authorId, $lyric->getId(), $type]);
+                $stmt->execute([
+                    $authorId,
+                    $lyric->getId(),
+                    $type,
+                ]);
             }
         }
     }
