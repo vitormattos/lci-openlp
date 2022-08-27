@@ -11,11 +11,3 @@ Este projeto tem por objetivo solicionar esta quesetão e baixar todos os hinos 
 ## Como usar
 
 O projeto é em PHP e basta executar o script index.php para ter a base de dados em formato SQLite. Vai demorar um pouco para processar tudo por questões óbvias, são mais de 600 hinos e consequentemente mais de 600 páginas para serem acessadas mas no final dá certo :-)
-
-## Status do projeto
-- [x] Download do sumário
-- [x] Download de todos os hinos
-- [x] Parse do HTML para extração de dados
-- [x] Inserir dados em arquivo SQLite
-- [ ] Funcionar no OpenLP
-  - Problema: está com erro de encoding, WIP.
