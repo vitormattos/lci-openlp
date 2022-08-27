@@ -23,7 +23,6 @@
 
 namespace Hinario;
 
-use DateTime;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpClient\Response\AsyncContext;
@@ -197,7 +196,7 @@ class Lyric
 
     public function parseAll(): void
     {
-        $authors = $this->getAuthors();
+        $this->getAuthors();
         $this->parseTitleAlternative();
         $this->translateUnkownAuthor();
         $this->parseSong();
@@ -231,10 +230,17 @@ class Lyric
     private function sanitizeText(string $string): string
     {
         // Replace multiple spaces
-        $string = preg_replace('/[  \t]+/', ' ', $string);
-        // rtrim
-        $string = preg_replace('/ *\n */', "\n", $string);
+        $string = preg_replace('/[\t ]+/', ' ', $string);
+        // remove whitespace from end of row
+        $string = preg_replace('/ \n/', "\n", $string);
+        // remove whitespace from begin of row
+        $string = preg_replace('/\n /', "\n", $string);
+        // remove double \n
+        $string = preg_replace('/\n+/', "\n", $string);
         $string = trim($string);
+        // Trim whitespace
+        $string = trim($string, chr(194).chr(160));
+
         return $string;
     }
 
@@ -316,7 +322,7 @@ class Lyric
         return $string;
     }
 
-    private function countAuthors(): int
+    public function countAuthors(): int
     {
         $total = 0;
         foreach ($this->authors as $authors) {
@@ -327,7 +333,7 @@ class Lyric
 
     public function parseAuthors(string $string, $type): string
     {
-        $name = '(?<name>([\/\'\-\(\)\da-záÁÄäâãéêẽêíÖóöôõúüçÇ,. ]+)+)';
+        $name = '(?<name>([\/\'\-\(\)\da-záÁÄäâãéèêÉẽêíÖóöôõúüçÇ,. ]+)+)';
         $separator = '[ ]*[\/;:\-][ ]*';
         $music = '(arranjo|me(lo|ol|l)dia|melida|estribilho|música)';
         $patternsDictionary = [
@@ -436,42 +442,7 @@ class Lyric
 
     public function __toString()
     {
-        $xml = "<?xml version='1.0' encoding='UTF-8'?>";
-        $xml.= '<song xmlns="http://openlyrics.info/namespace/2009/song" version="0.8" createdIn="OpenLP 2.9.5" modifiedIn="OpenLP 2.9.5" modifiedDate="' . (new \DateTime())->format('Y-m-d\TH:i:s') . '">';
-        $xml.= '  <properties>';
-        $xml.= '    <titles>';
-        $xml.= '      <title>' . $this->getTitle() . '</title>';
-        if ($this->getTitleAlternative()) {
-            $xml.= '      <title>' . $this->getTitleAlternative() . '</title>';
-        }
-        $xml.= '    </titles>';
-        $xml.= '    <authors>';
-        foreach ($this->getAuthors() as $type => $authors) {
-            foreach ($authors as $author) {
-                $xml.= '      <author type="' . $type . '">' . $author . '</author>';
-            }
-        }
-        $xml.= '    </authors>';
-        $xml.= '    <songbooks>';
-        $xml.= '      <songbook name="LCI" entry="' . $this->getLci(). '"/>';
-        if ($this->getHpd()) {
-            $xml.= '      <songbook name="HPD" entry="' . $this->getHpd(). '"/>';
-        }
-        $xml.= '    </songbooks>';
-        $xml.= '    <themes>';
-        foreach ($this->getTopic() as $topic) {
-            $xml.= '      <theme>' . $topic . '</theme>';
-        }
-        $xml.= '    </themes>';
-        $xml.= '  </properties>';
-        $xml.= '  <lyrics>';
-        foreach ($this->getParts() as $key => $part) {
-            $xml.= '    <verse name="v' . ($key + 1) . '">';
-            $xml.= '      <lines>' . nl2br($part) . '</lines>';
-            $xml.= '    </verse>';
-        }
-        $xml.= '  </lyrics>';
-        $xml.= '</song>';
-        return $xml;
+        $xmlLyric = new XmlLyric($this);
+        return (string) $xmlLyric;
     }
 }

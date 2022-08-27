@@ -153,13 +153,13 @@ class Proccess
         $data['comments'] = '';
         $data['ccli_number'] = '';
         $data['theme_name'] = null;
-        $data['search_title'] = $lyric->getTitle() .  '@' . $lyric->getTitleAlternative();
+        $data['search_title'] = $lyric->getTitle() . '@' . $lyric->getTitleAlternative();
         $data['search_lyrics'] = implode(' ', array_map(
             fn ($part) => str_replace("\n", ' ', $part),
             $lyric->getParts()
         ));
-        $data['create_date'] = (new \DateTime())->format('Y-m-d\TH:i:s');
-        $data['last_modified'] = (new \DateTime())->format('Y-m-d\TH:i:s');
+        $data['create_date'] = (new \DateTime())->format('Y-m-d H:i:s');
+        $data['last_modified'] = (new \DateTime())->format('Y-m-d H:i:s');
         $data['temporary'] = 0;
         $insert = 'INSERT INTO songs (' .
             implode(',', array_keys($data)) .
@@ -202,7 +202,11 @@ class Proccess
                     $parts = explode(' ', $displayName);
                     $last = array_pop($parts);
                     $first = implode(' ', $parts);
-                    $stmt->execute([$first, $last, $displayName]);
+                    $stmt->execute([
+                        $first,
+                        $last,
+                        $displayName,
+                    ]);
                     $authorId = $this->pdo->lastInsertId();
                 }
                 $stmt = $this->pdo->prepare('INSERT INTO authors_songs (author_id, song_id, author_type) VALUES(?,?,?)');
