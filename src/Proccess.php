@@ -40,8 +40,8 @@ class Proccess
         if (!file_exists($this->assetsPath . '/summary.json')) {
             $html = file_get_contents('https://www.luteranos.com.br/conteudo/livro-de-canto-da-ieclb-por-numeracao');
             // Replace invisible chars
-            $html = str_replace(' ', ' ', $html);
             $html = str_replace('&nbsp;', ' ', $html);
+            $html = str_replace(' ', ' ', $html);
             $crawler = new Crawler($html);
             $rows = $crawler
                 ->filter('article table>tbody>tr')
@@ -134,6 +134,9 @@ class Proccess
         $stmt = $this->pdo->query('DELETE FROM songs_songbooks');
         $stmt = $this->pdo->query('VACUUM');
         foreach ($songs as $lyric) {
+            if (!$lyric->getParts()) {
+                continue;
+            }
             $stmt = $this->pdo->prepare('INSERT INTO songs_songbooks (songbook_id, song_id, entry) VALUES(?,?,?)');
             $stmt->execute([1, $lyric->getId(), $lyric->getLci()]);
             if ($lyric->getHpd()) {
@@ -145,6 +148,9 @@ class Proccess
 
     private function insertSongs(Lyric $lyric): void
     {
+        if (!$lyric->getParts()) {
+            return;
+        }
         $data['title'] = $lyric->getTitle();
         $data['alternate_title'] = $lyric->getTitleAlternative() ?? '';
         $data['lyrics'] = (string) $lyric;
@@ -173,6 +179,9 @@ class Proccess
 
     private function insertTopics(Lyric $lyric): void
     {
+        if (!$lyric->getParts()) {
+            return;
+        }
         foreach ($lyric->getTopic() as $topic) {
             $stmt = $this->pdo->prepare('SELECT id FROM topics WHERE name = ?');
             $stmt->execute([$topic]);
@@ -192,6 +201,9 @@ class Proccess
 
     private function insertAuthors(Lyric $lyric): void
     {
+        if (!$lyric->getParts()) {
+            return;
+        }
         foreach ($lyric->getAuthors() as $type => $authors) {
             foreach ($authors as $displayName) {
                 $stmt = $this->pdo->prepare('SELECT id FROM authors WHERE display_name = ?');

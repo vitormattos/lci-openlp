@@ -232,14 +232,15 @@ class Lyric
         // Replace multiple spaces
         $string = preg_replace('/[\t ]+/', ' ', $string);
         // remove whitespace from end of row
-        $string = preg_replace('/ \n/', "\n", $string);
+        $string = preg_replace('/[\t ]+$/', ' ', $string);
         // remove whitespace from begin of row
         $string = preg_replace('/\n /', "\n", $string);
         // remove double \n
         $string = preg_replace('/\n+/', "\n", $string);
-        $string = trim($string);
         // Trim whitespace
+        $string = trim($string);
         $string = trim($string, chr(194).chr(160));
+        $string = trim($string);
 
         return $string;
     }
@@ -314,6 +315,8 @@ class Lyric
         $string = str_replace('Erfurt, século XV', 'Erfurt', $string);
         $string = str_replace('Criação Coletiva, Matanzas', 'Matanzas', $string);
         $string = str_replace('Johann Lindemann - Cyriakus Schneegass', 'Johann Lindemann, Cyriakus Schneegass', $string);
+        $string = str_replace("Autoria – Oziel Campos de Oliveira Jr.", "Autoria: Oziel Campos de Oliveira Jr.", $string);
+        $string = str_replace('(Cânone 2v)', '', $string);
         $string = str_replace('Letra: 95.1', '', $string);
         if (strpos($string, 'Salmo 91.1,2') !== false) {
             $this->setTopic('Salmo 91.1,2');
@@ -334,7 +337,7 @@ class Lyric
     public function parseAuthors(string $string, $type): string
     {
         $name = '(?<name>([\/\'\-\(\)\da-záÁÄäâãéèêÉẽêíÖóöôõúüçÇ,. ]+)+)';
-        $separator = '[ ]*[\/;:\-][ ]*';
+        $separator = '[  ]*[\/;:\-][  ]*';
         $music = '(arranjo|me(lo|ol|l)dia|melida|estribilho|música)';
         $patternsDictionary = [
             'words' => [
