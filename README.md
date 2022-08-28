@@ -10,4 +10,12 @@ Este projeto tem por objetivo solicionar esta quesetão e baixar todos os hinos 
 
 ## Como usar
 
+### Gerar novo banco de dados
+
 O projeto é em PHP e basta executar o script index.php para ter a base de dados em formato SQLite. Vai demorar um pouco para processar tudo por questões óbvias, são mais de 600 hinos e consequentemente mais de 600 páginas para serem acessadas mas no final dá certo :-)
+
+### Utilizar banco de dados existente
+
+Baixe o arquivo .sqlite da versão mais recente e importe em seu OpenLP:
+
+https://github.com/vitormattos/lci-openlp/releases/download/latest/
