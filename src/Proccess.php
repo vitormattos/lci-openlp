@@ -45,9 +45,9 @@ class Proccess
             $crawler = new Crawler($html);
             $rows = $crawler
                 ->filter('article table>tbody>tr')
-                ->each(function(Crawler $tr, $i) {
+                ->each(function (Crawler $tr, $i) {
                     $row = $tr->filter('td')
-                        ->each(function(Crawler $td, $j) {
+                        ->each(function (Crawler $td, $j) {
                             if ($j === 0) {
                                 $link = $td->filter('a');
                                 if ($link->count()) {
@@ -75,7 +75,7 @@ class Proccess
             file_put_contents($this->assetsPath . '/summary.json', json_encode(array_values($rows)));
         }
         $summary = json_decode(file_get_contents($this->assetsPath . '/summary.json'), true);
-        $summary = array_map(fn($row) => new Lyric($row, $this->assetsPath), $summary);
+        $summary = array_map(fn ($row) => new Lyric($row, $this->assetsPath), $summary);
         $this->downloadLyrics($summary);
         return $summary;
     }

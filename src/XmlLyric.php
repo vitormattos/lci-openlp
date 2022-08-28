@@ -1,4 +1,5 @@
 <?php
+
 namespace Hinario;
 
 use Spatie\ArrayToXml\ArrayToXml;

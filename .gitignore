@@ -1,3 +1,5 @@
 /.vscode/
 /assets/
 /vendor/
+/tests/tools/php-cs-fixer/vendor/
+.php-cs-fixer.cache

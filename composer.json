@@ -9,5 +9,9 @@
         "psr-4": {
             "Hinario\\": "src"
         }
+    },
+    "scripts": {
+        "cs:check": "tests/tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --dry-run --diff",
+        "cs:fix": "tests/tools/php-cs-fixer/vendor/bin/php-cs-fixer fix"
     }
 }

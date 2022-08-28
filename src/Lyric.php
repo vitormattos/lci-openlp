@@ -30,7 +30,7 @@ use Symfony\Component\HttpClient\Response\AsyncResponse;
 
 class Lyric
 {
-    const UNKNOWN_AUTHOR = 'Autoria desconheecida';
+    public const UNKNOWN_AUTHOR = 'Autoria desconheecida';
     private string $assetsPath;
     private string $lci;
     private string $htmlFile;
@@ -118,7 +118,8 @@ class Lyric
         return $this->topics;
     }
 
-    private function setTopic($topic): void {
+    private function setTopic($topic): void
+    {
         if (!in_array($topic, $this->topics)) {
             $this->topics[] = $topic;
         }
@@ -216,7 +217,7 @@ class Lyric
         $list = explode('<hr>', $crawler->filter('article')->html());
         $parts = (new Crawler($list[0]))
             ->filter('p')
-            ->each(function($part) {
+            ->each(function ($part) {
                 $part = $part->html();
                 $part = $this->sanitizeText($part);
                 $part = strip_tags($part);
@@ -400,7 +401,7 @@ class Lyric
                 continue;
             }
             foreach ($books as $book) {
-                $authors = array_filter($authors, function($author) use ($book) {
+                $authors = array_filter($authors, function ($author) use ($book) {
                     $found = preg_match('/' . $book . ' (\.,\d)*?/i', $author);
                     if ($found) {
                         $this->setTopic($author);
@@ -431,7 +432,7 @@ class Lyric
 
     private function removeUnusedAuthorTypes(): void
     {
-        $this->authors = array_filter($this->authors, fn($authors) => count($authors));
+        $this->authors = array_filter($this->authors, fn ($authors) => count($authors));
     }
 
     public function __toString()
