@@ -47,7 +47,7 @@ class Lyric
         'word' => [],
         'music' => [],
         'translation' => [],
-        'word_and_music' => [],
+        'words+music' => [],
     ];
     public function __construct(array $row, $assetsPath)
     {
@@ -272,7 +272,7 @@ class Lyric
             $string = strip_tags($string);
             $string = $this->cleanLikeGoHorse($string);
 
-            $string = $this->parseAuthors($string, 'word_and_music');
+            $string = $this->parseAuthors($string, 'words+music');
             $string = $this->parseAuthors($string, 'words');
             $string = $this->parseAuthors($string, 'music');
             $string = $this->parseAuthors($string, 'translation');
@@ -349,7 +349,7 @@ class Lyric
                 '/(adaptado)' . $separator . $name . '/i',
                 '/((autor(i?a)? da )?(tradução|tradutora?)( do latim)?)' . $separator . $name . '/i',
             ],
-            'word_and_music' => [
+            'words+music' => [
                 '/(L e M)' . $separator . $name . '/i',
                 '/((autor(i?a)? da )?(texto|let?(r)+a|versão|arranjo|est) e (da )?' . $music . ')' . $separator . $name . '/i',
             ],
@@ -357,12 +357,7 @@ class Lyric
         ];
         $patterns = $patternsDictionary[$type];
         if ($type === 'unknown') {
-            $type = 'word_and_music';
-        }
-        if ($type === 'word_and_music') {
-            $types = ['words', 'music'];
-        } else {
-            $types[] = $type;
+            $type = 'words+music';
         }
         $blockList = [
             'Alemanha, Século VII',
@@ -382,15 +377,11 @@ class Lyric
                     if (count($explode) > 1) {
                         foreach ($explode as $author) {
                             if (trim($author)) {
-                                foreach ($types as $type) {
-                                    $this->authors[$type][] = trim($author);
-                                }
+                                $this->authors[$type][] = trim($author);
                             }
                         }
                     } elseif (trim($match)) {
-                        foreach ($types as $type) {
-                            $this->authors[$type][] = trim($match);
-                        }
+                        $this->authors[$type][] = trim($match);
                     }
                     $string = str_replace($matches[$i], '', $string);
                 }
