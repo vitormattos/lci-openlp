@@ -11,6 +11,12 @@
         }
     },
     "scripts": {
+        "post-install-cmd": [
+            "composer install -d tests/tools/php-cs-fixer/"
+        ],
+        "post-update-cmd": [
+            "composer install -d tests/tools/php-cs-fixer/"
+        ],
         "cs:check": "tests/tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --dry-run --diff",
         "cs:fix": "tests/tools/php-cs-fixer/vendor/bin/php-cs-fixer fix"
     }
